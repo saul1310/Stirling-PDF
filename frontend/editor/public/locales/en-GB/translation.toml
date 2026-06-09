@@ -3772,9 +3772,16 @@ closeFile = "Close file"
 
 [fileEditor]
 addFiles = "Add Files"
+clearSearch = "Clear search"
+hiddenSelected = "{{count}} selected outside filter"
+noSearchResults = "No active files match your search"
+noSearchResultsHint = "Clear the search to show all loaded files."
 pageCount = "{{count}} pages"
 pageCount_one = "{{count}} page"
 pageCount_other = "{{count}} pages"
+searchActiveFiles = "Search active files"
+searchActiveFilesPlaceholder = "Search active files..."
+searchSummary = "Showing {{visible}} of {{total}} files"
 
 [fileManager]
 active = "Active"

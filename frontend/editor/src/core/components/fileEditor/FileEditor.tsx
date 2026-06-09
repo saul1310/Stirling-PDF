@@ -1,7 +1,16 @@
 import { useState, useCallback, useMemo, useEffect } from "react";
 import { flushSync } from "react-dom";
-import { Center, Box, LoadingOverlay } from "@mantine/core";
+import {
+  ActionIcon,
+  Box,
+  Center,
+  LoadingOverlay,
+  Text,
+  TextInput,
+} from "@mantine/core";
 import { Dropzone } from "@mantine/dropzone";
+import CloseIcon from "@mui/icons-material/Close";
+import SearchIcon from "@mui/icons-material/Search";
 import {
   useFileSelection,
   useFileState,
@@ -19,6 +28,12 @@ import { FileId, StirlingFile } from "@app/types/fileContext";
 import { alert } from "@app/components/toast";
 import { downloadFile } from "@app/services/downloadService";
 import { useToolWorkflow } from "@app/contexts/ToolWorkflowContext";
+import {
+  countSelectedFilesOutsideFilter,
+  filterFileEditorFiles,
+} from "@app/components/fileEditor/fileEditorSearch";
+import styles from "@app/components/fileEditor/FileEditor.module.css";
+import { useTranslation } from "react-i18next";
 
 interface FileEditorProps {
   onOpenPageEditor?: () => void;
@@ -31,6 +46,8 @@ const FileEditor = ({
   toolMode = false,
   supportedExtensions = ["pdf"],
 }: FileEditorProps) => {
+  const { t } = useTranslation();
+
   // Utility function to check if a file extension is supported
   const isFileSupported = useCallback(
     (fileName: string): boolean => {
@@ -60,6 +77,7 @@ const FileEditor = ({
 
   const [_status, _setStatus] = useState<string | null>(null);
   const [_error, _setError] = useState<string | null>(null);
+  const [fileSearchTerm, setFileSearchTerm] = useState("");
 
   // Toast helpers
   const showStatus = useCallback(
@@ -95,6 +113,23 @@ const FileEditor = ({
   }, [selectedTool?.maxFiles, toolMode]);
 
   const [showFilePickerModal, setShowFilePickerModal] = useState(false);
+
+  const filteredFileStubs = useMemo(
+    () => filterFileEditorFiles(activeStirlingFileStubs, fileSearchTerm),
+    [activeStirlingFileStubs, fileSearchTerm],
+  );
+
+  const hiddenSelectedFileCount = useMemo(
+    () =>
+      countSelectedFilesOutsideFilter(
+        selectedFileIds,
+        filteredFileStubs,
+        activeStirlingFileStubs,
+      ),
+    [activeStirlingFileStubs, filteredFileStubs, selectedFileIds],
+  );
+
+  const hasActiveSearch = fileSearchTerm.trim().length > 0;
 
   // Process uploaded files using context
   // ZIP extraction is now handled automatically in FileContext based on user preferences
@@ -380,41 +415,106 @@ const FileEditor = ({
               <AddFileCard onFileSelect={handleFileUpload} />
             </Center>
           ) : (
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
-                rowGap: "1.5rem",
-                padding: "1rem",
-                pointerEvents: "auto",
-              }}
-            >
-              {/* Add File Card - only show when files exist */}
-              {activeStirlingFileStubs.length > 0 && (
-                <AddFileCard
-                  key="add-file-card"
-                  onFileSelect={handleFileUpload}
+            <>
+              <div className={styles.searchBar}>
+                <TextInput
+                  aria-label={t(
+                    "fileEditor.searchActiveFiles",
+                    "Search active files",
+                  )}
+                  className={styles.searchInput}
+                  leftSection={<SearchIcon fontSize="small" />}
+                  placeholder={t(
+                    "fileEditor.searchActiveFilesPlaceholder",
+                    "Search active files...",
+                  )}
+                  rightSection={
+                    hasActiveSearch ? (
+                      <ActionIcon
+                        aria-label={t("fileEditor.clearSearch", "Clear search")}
+                        size="sm"
+                        variant="subtle"
+                        onClick={() => setFileSearchTerm("")}
+                      >
+                        <CloseIcon fontSize="small" />
+                      </ActionIcon>
+                    ) : null
+                  }
+                  value={fileSearchTerm}
+                  onChange={(event) =>
+                    setFileSearchTerm(event.currentTarget.value)
+                  }
                 />
-              )}
+                <Text className={styles.searchSummary} size="sm">
+                  {t(
+                    "fileEditor.searchSummary",
+                    "Showing {{visible}} of {{total}} files",
+                    {
+                      visible: filteredFileStubs.length,
+                      total: activeStirlingFileStubs.length,
+                    },
+                  )}
+                  {hiddenSelectedFileCount > 0
+                    ? ` • ${t(
+                        "fileEditor.hiddenSelected",
+                        "{{count}} selected outside filter",
+                        { count: hiddenSelectedFileCount },
+                      )}`
+                    : ""}
+                </Text>
+              </div>
 
-              {activeStirlingFileStubs.map((record, index) => {
-                return (
-                  <FileEditorThumbnail
-                    key={record.id}
-                    file={record}
-                    index={index}
-                    totalFiles={activeStirlingFileStubs.length}
-                    onCloseFile={handleCloseFile}
-                    onViewFile={handleViewFile}
-                    onReorderFiles={handleReorderFiles}
-                    onDownloadFile={handleDownloadFile}
-                    onUnzipFile={handleUnzipFile}
-                    toolMode={toolMode}
-                    isSupported={isFileSupported(record.name)}
-                  />
-                );
-              })}
-            </div>
+              {filteredFileStubs.length === 0 ? (
+                <Center className={styles.noSearchResults}>
+                  <div>
+                    <Text fw={600}>
+                      {t(
+                        "fileEditor.noSearchResults",
+                        "No active files match your search",
+                      )}
+                    </Text>
+                    <Text c="dimmed" size="sm">
+                      {t(
+                        "fileEditor.noSearchResultsHint",
+                        "Clear the search to show all loaded files.",
+                      )}
+                    </Text>
+                  </div>
+                </Center>
+              ) : (
+                <div className={styles.fileGrid}>
+                  {/* Add File Card - only show when files exist */}
+                  {activeStirlingFileStubs.length > 0 && (
+                    <AddFileCard
+                      key="add-file-card"
+                      onFileSelect={handleFileUpload}
+                    />
+                  )}
+
+                  {filteredFileStubs.map((record) => {
+                    const originalIndex = activeStirlingFileStubs.findIndex(
+                      (file) => file.id === record.id,
+                    );
+
+                    return (
+                      <FileEditorThumbnail
+                        key={record.id}
+                        file={record}
+                        index={originalIndex}
+                        totalFiles={activeStirlingFileStubs.length}
+                        onCloseFile={handleCloseFile}
+                        onViewFile={handleViewFile}
+                        onReorderFiles={handleReorderFiles}
+                        onDownloadFile={handleDownloadFile}
+                        onUnzipFile={handleUnzipFile}
+                        toolMode={toolMode}
+                        isSupported={isFileSupported(record.name)}
+                      />
+                    );
+                  })}
+                </div>
+              )}
+            </>
           )}
         </Box>
 

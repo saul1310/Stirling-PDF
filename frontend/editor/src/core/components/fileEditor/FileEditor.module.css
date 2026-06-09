@@ -2,6 +2,38 @@
    FileEditor Card UI Styles
    ========================= */
 
+.searchBar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0 1rem 0.5rem;
+  pointer-events: auto;
+}
+
+.searchInput {
+  flex: 1 1 20rem;
+  max-width: 28rem;
+}
+
+.searchSummary {
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.noSearchResults {
+  min-height: 18rem;
+  text-align: center;
+  pointer-events: auto;
+}
+
+.fileGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  row-gap: 1.5rem;
+  padding: 1rem;
+  pointer-events: auto;
+}
+
 .card {
   background: var(--file-card-bg);
   border-radius: 0.0625rem;
@@ -392,4 +424,19 @@
 .addFileSubtext {
   font-size: 0.875rem;
   opacity: 0.8;
+}
+
+@media (max-width: 720px) {
+  .searchBar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .searchInput {
+    max-width: none;
+  }
+
+  .searchSummary {
+    white-space: normal;
+  }
 }
