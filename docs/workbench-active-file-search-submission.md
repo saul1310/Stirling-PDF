@@ -24,11 +24,15 @@ The design proposed:
 
 ## 2. Pull Request Link
 
-Pull request:
+Pull request creation link:
 
 - https://github.com/Stirling-Tools/Stirling-PDF/compare/main...saul1310:Stirling-PDF:feature/workbench-file-search?expand=1
 
-The branch is intended to be pushed to the fork and opened as an individual pull request from `feature/workbench-file-search`.
+Pushed branch:
+
+- https://github.com/saul1310/Stirling-PDF/tree/feature/workbench-file-search
+
+The branch has been pushed to the fork. The terminal environment does not have GitHub CLI installed, so the compare link above is the link to open the individual pull request from `feature/workbench-file-search`. After the PR is created in GitHub, this section can be replaced with the final PR URL.
 
 ## 3. Project Guidelines
 
@@ -72,4 +76,3 @@ Validation limitations:
 
 - `task frontend:check` could not run because `task` is not installed in this environment.
 - The focused Vitest command reaches the repository's local `ERR_REQUIRE_ESM` startup issue while loading `frontend/editor/vitest.config.ts`. The new pure utility test is included for CI or a local environment where the configured Vitest runner starts correctly.
-
